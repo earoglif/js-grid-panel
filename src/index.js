@@ -15,6 +15,7 @@ const gridPanel = new GridPanel({
             text: 'Режим работы',
             dataIndex: 'mode',
             visible: true,
+            width: '2fr',
             render: (...props) => {
                 console.log('Render column mode:', props);
             }
@@ -25,6 +26,7 @@ const gridPanel = new GridPanel({
             dataIndex: 'object',
             hold: true,
             visible: true,
+            width: '1fr',
             render: (...props) => {
                 console.log('Render column objectAddress:', props);
             }
@@ -36,6 +38,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     console.log('INIT:', this, gridPanel);
 
-    gridPanel.render('content');
+    gridPanel.loadData({
+        url: 'http://localhost:3000/db'
+    }).then( props => {
+        gridPanel.render('content');
+    })catch( error => {
+        gridPanel.showError('данные не подгрузились');
+    });
 
 });
