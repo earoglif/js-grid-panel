@@ -6,12 +6,14 @@ export default class GridPanel {
         }
 
         this.defaultStyle = {
-            header: 'padding: 10px; border-bottom: 1px solid #999999; overflow: hidden; text-overflow: ellipsis;'
+            header: 'padding: 10px; border-bottom: 1px solid #999999; overflow: hidden; text-overflow: ellipsis; font-weight: 600; white-space: nowrap;',
+            cell: 'padding: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;'
         }
 
         this.columns = savedParams.columns ? savedParams.columns : props.columns;
-        this.showError = this.showError.bind(this);
-        this.loadData = this.loadData.bind(this);
+        this.targetId = props.targetId;
+        this.id = props.id;
+        this.extraData = null;
 
         console.log('GridPanel:', savedParams, props, this.columns);
     }
@@ -21,6 +23,21 @@ export default class GridPanel {
     }
 
     emptyFn() {}
+
+    stripSlashes(str) {
+        str += '';
+        str = str.replace(/\"/g, '&quot;');
+        return str;
+    }
+
+    isFunction(functionToCheck) {
+        const getType = {};
+        return functionToCheck && getType.toString.call(functionToCheck) === '[object Function]';
+    }
+
+    setExtraData(extraData) {
+        this.extraData = extraData;
+    }
 
     setGridContainer() {
         const columns = this.columns || [],
@@ -33,7 +50,7 @@ export default class GridPanel {
 
         let header = '',
             gridTemplateColumns = [],
-            gridLineIndex = 1,
+            gridColIndex = 1,
             columnWidth;
 
         columns.forEach((item, i) => {
@@ -41,14 +58,14 @@ export default class GridPanel {
                 columnWidth = item.width || 'auto';
                 gridTemplateColumns.push(columnWidth);
                 header += `<div
-                    style="grid-column: ${gridLineIndex++ + '/' + gridLineIndex}; grid-row: 1/2;${headerStyle}"
+                    style="grid-column: ${gridColIndex++ + '/' + gridColIndex}; grid-row: 1/2; ${headerStyle}"
                     title="${item.text}"
                     >${item.text}</div>`;
             }
         });
         gridTemplateColumns = gridTemplateColumns.join(' ');
 
-        let mainEl = `<div style="display: grid; grid-template-columns: ${gridTemplateColumns}; grid-template-rows: auto;">${header}</div>`;
+        let mainEl = `<div id="${this.id}" style="display: grid; grid-template-columns: ${gridTemplateColumns}; grid-template-rows: auto;">${header}</div>`;
 
         console.log('setGridContainer:', mainEl);
 
@@ -70,7 +87,8 @@ export default class GridPanel {
                 if (xhr.status != 200) {
                     reject(xhr);
                 } else {
-                    resolve(xhr);
+                    const response = JSON.parse(xhr.responseText);
+                    resolve(response);
                 }
             }
 
@@ -78,11 +96,51 @@ export default class GridPanel {
     }
 
     addRows(newRows) {
+        const gridPanel = document.getElementById(this.id),
+              rowStyle = this.rowStyle || this.defaultStyle.cell,
+              columns = this.columns || [];
 
+        let newGridTemplateRows = [],
+            appendInnerHtml = '',
+            gridColIndex = 1,
+            gridRowIndex = 2; //!!! Переделать! Необходимо считать общее количество элементов. !!!
+
+        newRows.forEach((itemRow, i) => {
+            newGridTemplateRows.push('auto');
+
+            columns.forEach((itemCol, i) => {
+                if(itemCol['visible']) {
+                    appendInnerHtml += this.renderRow(itemCol, itemRow, gridColIndex++ + '/' + gridColIndex, gridRowIndex + '/' + (gridRowIndex+1));
+                }
+            });
+
+            gridRowIndex++;
+            gridColIndex = 1;
+
+        });
+        newGridTemplateRows = newGridTemplateRows.join(' ');
+
+        gridPanel.style.gridTemplateRows += ' ' + newGridTemplateRows;
+        gridPanel.innerHTML += appendInnerHtml;
     }
 
-    render(tergetId) {
-        const target = document.getElementById(tergetId),
+    renderRow(itemCol, itemRow, gridColumn, gridRow) {
+        let cellStyle = itemRow.style || this.defaultStyle.cell;
+
+        const value = (itemCol.render && this.isFunction(itemCol.render)) ?
+                        itemCol.render(itemRow[itemCol.dataIndex], cellStyle, itemRow, this.extraData) :
+                        itemRow[itemCol.dataIndex];
+
+        console.log('renderRow:', cellStyle);
+
+        return `<div
+                style="grid-column: ${gridColumn}; grid-row: ${gridRow}; ${cellStyle}"
+                title="${this.stripSlashes(value)}"
+                >${value}</div>`;
+    }
+
+    render() {
+        const target = document.getElementById(this.targetId),
               gridContainer = this.setGridContainer();
 
         target.innerHTML = gridContainer;

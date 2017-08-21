@@ -1,6 +1,8 @@
 import GridPanel from './components/GridPanel';
 
 const gridPanel = new GridPanel({
+    id: 'myGrid',
+    targetId: 'content',
     columns: [
         {
             id: 'name',
@@ -17,7 +19,7 @@ const gridPanel = new GridPanel({
             visible: true,
             width: '2fr',
             render: (...props) => {
-                console.log('Render column mode:', props);
+                //console.log('Render column mode:', props);
             }
         },
         {
@@ -27,8 +29,12 @@ const gridPanel = new GridPanel({
             hold: true,
             visible: true,
             width: '1fr',
-            render: (...props) => {
-                console.log('Render column objectAddress:', props);
+            render: function(value, cellStyle, props, extra) {
+                cellStyle += ' background-color: red;';
+
+                console.log('Render column objectAddress:',  cellStyle);
+
+                return value.address || '—';
             }
         }
     ]
@@ -41,9 +47,11 @@ document.addEventListener("DOMContentLoaded", () => {
     gridPanel.loadData({
         url: 'http://localhost:3000/db'
     }).then( props => {
-        gridPanel.render('content');
-    })catch( error => {
-        gridPanel.showError('данные не подгрузились');
+        gridPanel.render();
+        gridPanel.setExtraData(props);
+        gridPanel.addRows(props.modules);
+    }).catch( error => {
+        gridPanel.showError(error);
     });
 
 });

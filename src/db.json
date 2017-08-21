@@ -168,7 +168,7 @@
             "id": 12884901895,
             "is_blocked": false,
             "mode": 3,
-            "name": "cherny-333333",
+            "name": "cherny\"-3333334",
             "object": {
                 "address": "",
                 "buffer_size": 0,
@@ -177,7 +177,7 @@
                 "name": ""
             },
             "parent_id": -1,
-            "serialNum": "cherny-333333",
+            "serialNum": "cherny\"-3333334",
             "service_ks": 5,
             "state": 6
         }
