@@ -14,6 +14,7 @@ export default class GridPanel {
         this.targetId = props.targetId;
         this.id = props.id;
         this.extraData = null;
+        this.store = [];
 
         console.log('GridPanel:', savedParams, props, this.columns);
     }
@@ -35,6 +36,18 @@ export default class GridPanel {
         return functionToCheck && getType.toString.call(functionToCheck) === '[object Function]';
     }
 
+    getStore() {
+        return this.store;
+    }
+
+    setStore(data) {
+        this.store = data;
+    }
+
+    addToStore(data) {
+        this.store.concat(data);
+    }
+
     setExtraData(extraData) {
         this.extraData = extraData;
     }
@@ -51,21 +64,28 @@ export default class GridPanel {
         let header = '',
             gridTemplateColumns = [],
             gridColIndex = 1,
-            columnWidth;
+            columnWidth, headerStyleGrid, msHeaderStyleGrid;
 
         columns.forEach((item, i) => {
             if(item['visible']) {
                 columnWidth = item.width || 'auto';
                 gridTemplateColumns.push(columnWidth);
+                headerStyleGrid = `grid-column: ${gridColIndex + '/' + (gridColIndex+1)}; grid-row: 1/2;`;
+                msHeaderStyleGrid = `-ms-grid-column: ${gridColIndex}; -ms-grid-row: 1;`;
+
                 header += `<div
-                    style="grid-column: ${gridColIndex++ + '/' + gridColIndex}; grid-row: 1/2; ${headerStyle}"
+                    style="${headerStyleGrid} ${msHeaderStyleGrid} ${headerStyle}"
                     title="${item.text}"
                     >${item.text}</div>`;
+
+                gridColIndex++;
             }
         });
         gridTemplateColumns = gridTemplateColumns.join(' ');
 
-        let mainEl = `<div id="${this.id}" style="display: grid; grid-template-columns: ${gridTemplateColumns}; grid-template-rows: auto;">${header}</div>`;
+        const gridPanelStyle = `display: grid; grid-template-columns: ${gridTemplateColumns}; grid-template-rows: auto;`,
+              msGridPanelStyle = `display: -ms-grid; -ms-grid-columns: ${gridTemplateColumns}; -ms-grid-rows: auto;`,
+              mainEl = `<div id="${this.id}" style="${gridPanelStyle} ${msGridPanelStyle}">${header}</div>`;
 
         console.log('setGridContainer:', mainEl);
 
@@ -103,14 +123,17 @@ export default class GridPanel {
         let newGridTemplateRows = [],
             appendInnerHtml = '',
             gridColIndex = 1,
-            gridRowIndex = 2; //!!! Переделать! Необходимо считать общее количество элементов. !!!
+            gridRowIndex = this.getStore().length + 2;
+
+        this.addToStore(newRows);
 
         newRows.forEach((itemRow, i) => {
-            newGridTemplateRows.push('auto');
+            //newGridTemplateRows.push('auto');
 
             columns.forEach((itemCol, i) => {
                 if(itemCol['visible']) {
-                    appendInnerHtml += this.renderRow(itemCol, itemRow, gridColIndex++ + '/' + gridColIndex, gridRowIndex + '/' + (gridRowIndex+1));
+                    appendInnerHtml += this.renderRow(itemCol, itemRow, gridColIndex, gridRowIndex);
+                    gridColIndex++
                 }
             });
 
@@ -125,16 +148,18 @@ export default class GridPanel {
     }
 
     renderRow(itemCol, itemRow, gridColumn, gridRow) {
-        let cellStyle = itemRow.style || this.defaultStyle.cell;
+        let cellStyle = itemRow.style || this.defaultStyle.cell,
+        rowStyleGrid, msRowrStyleGrid;
 
-        const value = (itemCol.render && this.isFunction(itemCol.render)) ?
-                        itemCol.render(itemRow[itemCol.dataIndex], cellStyle, itemRow, this.extraData) :
+        let value = (itemCol.render && this.isFunction(itemCol.render)) ?
+                        itemCol.render(itemRow[itemCol.dataIndex], itemRow, this.extraData) :
                         itemRow[itemCol.dataIndex];
 
-        console.log('renderRow:', cellStyle);
+        rowStyleGrid = `grid-column: ${gridColumn + '/' + (gridColumn+1)}; grid-row: ${gridRow + '/' + (gridRow+1)};`;
+        msRowrStyleGrid = `-ms-grid-column: ${gridColumn}; -ms-grid-row: ${gridRow};`;
 
         return `<div
-                style="grid-column: ${gridColumn}; grid-row: ${gridRow}; ${cellStyle}"
+                style="${rowStyleGrid} ${msRowrStyleGrid} ${cellStyle}"
                 title="${this.stripSlashes(value)}"
                 >${value}</div>`;
     }

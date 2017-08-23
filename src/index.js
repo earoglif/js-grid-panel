@@ -10,7 +10,7 @@ const gridPanel = new GridPanel({
             dataIndex: 'name',
             hold: true,
             visible: true,
-            width: '50px'
+            width: '150px'
         },
         {
             id: 'mode',
@@ -18,8 +18,9 @@ const gridPanel = new GridPanel({
             dataIndex: 'mode',
             visible: true,
             width: '2fr',
-            render: (...props) => {
-                //console.log('Render column mode:', props);
+            render: (value, props, extra) => {
+                const mode = extra.itemsQuickLookItemMenuChangeModuleMode;
+                return mode[ Object.keys(mode)[value] ];
             }
         },
         {
@@ -29,11 +30,7 @@ const gridPanel = new GridPanel({
             hold: true,
             visible: true,
             width: '1fr',
-            render: function(value, cellStyle, props, extra) {
-                cellStyle += ' background-color: red;';
-
-                console.log('Render column objectAddress:',  cellStyle);
-
+            render: (value, props, extra) => {
                 return value.address || '—';
             }
         }

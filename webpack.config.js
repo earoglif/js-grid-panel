@@ -1,8 +1,9 @@
+require('babel-polyfill');
 const webpack = require('webpack');
 const path = require('path');
 
 module.exports = {
-    entry: './src/index.js',
+    entry: ['babel-polyfill', './src/index.js'],
     output: {
         path: __dirname + '/dist/js',
         filename: 'index.js'
@@ -13,25 +14,12 @@ module.exports = {
     module: {
         loaders: [
             {
-                test: /\.(js|jsx)$/,
+                test: /\.js$/,
                 exclude: /node_modules/,
                 loader: 'babel',
-                query: {presets: ['es2015']}
-            }
-        ],
-        rules: [
-            {
-                test: /\.(sass|scss)$/,
-                use: [
-                    'stule-loader',
-                    'css-loader',
-                    {
-                        loader: 'sass-loader',
-                        options: {
-
-                        }
-                    }
-                ]
+                query: {
+                    presets: ['es2015'],
+                }
             }
         ]
     },
