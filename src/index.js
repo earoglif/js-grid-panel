@@ -25,13 +25,13 @@ const gridPanel = new GridPanel({
         },
         {
             id: 'objectAddress',
-            text: 'Режим работы',
+            text: 'Адрес',
             dataIndex: 'object',
             hold: true,
             visible: true,
             width: '1fr',
             render: (value, props, extra) => {
-                return value.address || '—';
+                return value.address || '<div style="border: 1px solid red;">—</div>';
             }
         }
     ]

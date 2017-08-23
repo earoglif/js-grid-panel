@@ -160,8 +160,21 @@ export default class GridPanel {
 
         return `<div
                 style="${rowStyleGrid} ${msRowrStyleGrid} ${cellStyle}"
+                role="gridcell"
                 title="${this.stripSlashes(value)}"
                 >${value}</div>`;
+    }
+
+    onGridCellClick(el) {
+        console.log('onGridCellClick:', el);
+    }
+
+    onGridCellMouseOver(el) {
+        console.log('onGridCellMouseOver:', el);
+    }
+
+    onGridCellMouseOut(el) {
+        console.log('onGridCellMouseOut:', el);
     }
 
     render() {
@@ -170,6 +183,16 @@ export default class GridPanel {
 
         target.innerHTML = gridContainer;
 
-        console.log('GridPanel render!', target);
+        document.getElementById(this.id).addEventListener('click', event => {
+            event.path.some(el => {
+                if(el.getAttribute('role') === 'gridcell') {
+                    //this.onGridCellClick(el);
+                    console.log('gridcell:', event);
+                    return true;
+                } else if(el.id === this.id) {
+                    return true;
+                }
+            });
+        });
     }
 }

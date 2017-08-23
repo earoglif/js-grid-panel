@@ -3703,13 +3703,13 @@ var gridPanel = new _GridPanel2.default({
         }
     }, {
         id: 'objectAddress',
-        text: 'Режим работы',
+        text: 'Адрес',
         dataIndex: 'object',
         hold: true,
         visible: true,
         width: '1fr',
         render: function render(value, props, extra) {
-            return value.address || '—';
+            return value.address || '<div style="border: 1px solid red;">—</div>';
         }
     }]
 });
@@ -3951,17 +3951,44 @@ var GridPanel = function () {
             rowStyleGrid = 'grid-column: ' + (gridColumn + '/' + (gridColumn + 1)) + '; grid-row: ' + (gridRow + '/' + (gridRow + 1)) + ';';
             msRowrStyleGrid = '-ms-grid-column: ' + gridColumn + '; -ms-grid-row: ' + gridRow + ';';
 
-            return '<div\n                style="' + rowStyleGrid + ' ' + msRowrStyleGrid + ' ' + cellStyle + '"\n                title="' + this.stripSlashes(value) + '"\n                >' + value + '</div>';
+            return '<div\n                style="' + rowStyleGrid + ' ' + msRowrStyleGrid + ' ' + cellStyle + '"\n                role="gridcell"\n                title="' + this.stripSlashes(value) + '"\n                >' + value + '</div>';
+        }
+    }, {
+        key: 'onGridCellClick',
+        value: function onGridCellClick(el) {
+            console.log('onGridCellClick:', el);
+        }
+    }, {
+        key: 'onGridCellMouseOver',
+        value: function onGridCellMouseOver(el) {
+            console.log('onGridCellMouseOver:', el);
+        }
+    }, {
+        key: 'onGridCellMouseOut',
+        value: function onGridCellMouseOut(el) {
+            console.log('onGridCellMouseOut:', el);
         }
     }, {
         key: 'render',
         value: function render() {
+            var _this2 = this;
+
             var target = document.getElementById(this.targetId),
                 gridContainer = this.setGridContainer();
 
             target.innerHTML = gridContainer;
 
-            console.log('GridPanel render!', target);
+            document.getElementById(this.id).addEventListener('click', function (event) {
+                event.path.some(function (el) {
+                    if (el.getAttribute('role') === 'gridcell') {
+                        //this.onGridCellClick(el);
+                        console.log('gridcell:', event);
+                        return true;
+                    } else if (el.id === _this2.id) {
+                        return true;
+                    }
+                });
+            });
         }
     }]);
 
