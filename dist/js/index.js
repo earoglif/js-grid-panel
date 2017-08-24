@@ -3792,9 +3792,11 @@ var GridPanel = function () {
             cell: 'padding: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;'
         };
 
-        this.columns = savedParams.columns ? savedParams.columns : props.columns;
-        this.targetId = props.targetId;
         this.id = props.id;
+        this.targetId = props.targetId;
+        this.columns = savedParams.columns ? savedParams.columns : props.columns;
+        this.stylePrefix = props.stylePrefix || props.id;
+        this.selectableRows = props.selectableRows || true;
         this.extraData = null;
         this.store = [];
 
@@ -3824,8 +3826,9 @@ var GridPanel = function () {
         }
     }, {
         key: 'getStore',
-        value: function getStore() {
-            return this.store;
+        value: function getStore(index) {
+            var store = index !== undefined ? this.store[index] : this.store;
+            return store;
         }
     }, {
         key: 'setStore',
@@ -3835,7 +3838,7 @@ var GridPanel = function () {
     }, {
         key: 'addToStore',
         value: function addToStore(data) {
-            this.store.concat(data);
+            this.setStore(this.store.concat(data));
         }
     }, {
         key: 'setExtraData',
@@ -3867,7 +3870,7 @@ var GridPanel = function () {
                     headerStyleGrid = 'grid-column: ' + (gridColIndex + '/' + (gridColIndex + 1)) + '; grid-row: 1/2;';
                     msHeaderStyleGrid = '-ms-grid-column: ' + gridColIndex + '; -ms-grid-row: 1;';
 
-                    header += '<div\n                    style="' + headerStyleGrid + ' ' + msHeaderStyleGrid + ' ' + headerStyle + '"\n                    title="' + item.text + '"\n                    >' + item.text + '</div>';
+                    header += '<div\n                    style="' + headerStyleGrid + ' ' + msHeaderStyleGrid + ' ' + headerStyle + '"\n                    role="headercell"\n                    data-col-index="' + (gridColIndex - 1) + '"\n                    title="' + item.text + '"\n                    >' + item.text + '</div>';
 
                     gridColIndex++;
                 }
@@ -3951,43 +3954,109 @@ var GridPanel = function () {
             rowStyleGrid = 'grid-column: ' + (gridColumn + '/' + (gridColumn + 1)) + '; grid-row: ' + (gridRow + '/' + (gridRow + 1)) + ';';
             msRowrStyleGrid = '-ms-grid-column: ' + gridColumn + '; -ms-grid-row: ' + gridRow + ';';
 
-            return '<div\n                style="' + rowStyleGrid + ' ' + msRowrStyleGrid + ' ' + cellStyle + '"\n                role="gridcell"\n                title="' + this.stripSlashes(value) + '"\n                >' + value + '</div>';
+            return '<div\n                style="' + rowStyleGrid + ' ' + msRowrStyleGrid + ' ' + cellStyle + '"\n                role="gridcell"\n                data-col-index="' + (gridColumn - 1) + '"\n                data-row-index="' + (gridRow - 2) + '"\n                title="' + this.stripSlashes(value) + '"\n                >' + value + '</div>';
+        }
+    }, {
+        key: 'rowSetSelect',
+        value: function rowSetSelect(rowIndex) {
+            var rowData = this.getStore(rowIndex);
+
+            this.setCellClassByAttribute('toggle', 'data-row-index', rowIndex, this.stylePrefix + '-cell-select');
+
+            console.log('rowSelect', rowIndex, rowData);
+        }
+    }, {
+        key: 'onGridHeaderCellClick',
+        value: function onGridHeaderCellClick(el) {
+            var colIndex = el.getAttribute('data-col-index');
+            this.setCellClassByAttribute('toggle', 'data-col-index', colIndex, this.stylePrefix + '-cell-select');
+
+            console.log('onGridHeaderCellClick');
         }
     }, {
         key: 'onGridCellClick',
         value: function onGridCellClick(el) {
+            //this.setCellClass('toggle', el, this.stylePrefix + '-cell-select');
+            this.selectableRows && this.rowSetSelect(el.getAttribute('data-row-index'));
             console.log('onGridCellClick:', el);
         }
     }, {
         key: 'onGridCellMouseOver',
         value: function onGridCellMouseOver(el) {
+            var rowIndex = el.getAttribute('data-row-index');
+            //this.setCellClass('add', el, this.stylePrefix + '-cell-mouseover');
+            this.selectableRows && this.setCellClassByAttribute('add', 'data-row-index', rowIndex, this.stylePrefix + '-cell-mouseover');
             console.log('onGridCellMouseOver:', el);
         }
     }, {
         key: 'onGridCellMouseOut',
         value: function onGridCellMouseOut(el) {
+            var rowIndex = el.getAttribute('data-row-index');
+            //this.setCellClass('remove', el, this.stylePrefix + '-cell-mouseover');
+            this.selectableRows && this.setCellClassByAttribute('remove', 'data-row-index', rowIndex, this.stylePrefix + '-cell-mouseover');
             console.log('onGridCellMouseOut:', el);
+        }
+
+        /*
+         *  eventName: действие с классом(add, remove, toggle)
+         *  cell: выбранный DOM-элемент
+         */
+
+    }, {
+        key: 'setCellClass',
+        value: function setCellClass(eventName, cell, className) {
+            cell && cell.classList[eventName](className);
+        }
+    }, {
+        key: 'setCellClassByAttribute',
+        value: function setCellClassByAttribute(eventName, attrName, attrVal, className) {
+            var _this2 = this;
+
+            var cells = document.querySelectorAll('[' + attrName + '="' + attrVal + '"]');
+            cells && cells.forEach(function (cell) {
+                _this2.setCellClass(eventName, cell, className);
+            });
+        }
+    }, {
+        key: 'addCellEventListener',
+        value: function addCellEventListener(role, eventName, fn) {
+            var _this3 = this;
+
+            document.getElementById(this.id).addEventListener(eventName, function (event) {
+                event.path.some(function (el) {
+                    if (el.getAttribute('role') === role) {
+                        fn && fn(el);
+                        //console.log('addCellEventListener:', event);
+                        return true;
+                    } else if (el.id === _this3.id) {
+                        return true;
+                    }
+                });
+            });
         }
     }, {
         key: 'render',
         value: function render() {
-            var _this2 = this;
+            var _this4 = this;
 
             var target = document.getElementById(this.targetId),
                 gridContainer = this.setGridContainer();
 
             target.innerHTML = gridContainer;
 
-            document.getElementById(this.id).addEventListener('click', function (event) {
-                event.path.some(function (el) {
-                    if (el.getAttribute('role') === 'gridcell') {
-                        //this.onGridCellClick(el);
-                        console.log('gridcell:', event);
-                        return true;
-                    } else if (el.id === _this2.id) {
-                        return true;
-                    }
-                });
+            this.addCellEventListener('headercell', 'click', function (el) {
+                _this4.onGridHeaderCellClick(el);
+                console.log('headercell');
+            });
+
+            this.addCellEventListener('gridcell', 'click', function (el) {
+                _this4.onGridCellClick(el);
+            });
+            this.addCellEventListener('gridcell', 'mouseover', function (el) {
+                _this4.onGridCellMouseOver(el);
+            });
+            this.addCellEventListener('gridcell', 'mouseout', function (el) {
+                _this4.onGridCellMouseOut(el);
             });
         }
     }]);

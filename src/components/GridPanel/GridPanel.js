@@ -10,9 +10,11 @@ export default class GridPanel {
             cell: 'padding: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;'
         }
 
-        this.columns = savedParams.columns ? savedParams.columns : props.columns;
-        this.targetId = props.targetId;
         this.id = props.id;
+        this.targetId = props.targetId;
+        this.columns = savedParams.columns ? savedParams.columns : props.columns;
+        this.stylePrefix = props.stylePrefix || props.id;
+        this.selectableRows = props.selectableRows || true;
         this.extraData = null;
         this.store = [];
 
@@ -36,8 +38,9 @@ export default class GridPanel {
         return functionToCheck && getType.toString.call(functionToCheck) === '[object Function]';
     }
 
-    getStore() {
-        return this.store;
+    getStore(index) {
+        const store = (index !== undefined) ? this.store[index] : this.store;
+        return store;
     }
 
     setStore(data) {
@@ -45,7 +48,7 @@ export default class GridPanel {
     }
 
     addToStore(data) {
-        this.store.concat(data);
+        this.setStore(this.store.concat(data));
     }
 
     setExtraData(extraData) {
@@ -75,6 +78,8 @@ export default class GridPanel {
 
                 header += `<div
                     style="${headerStyleGrid} ${msHeaderStyleGrid} ${headerStyle}"
+                    role="headercell"
+                    data-col-index="${gridColIndex-1}"
                     title="${item.text}"
                     >${item.text}</div>`;
 
@@ -161,20 +166,74 @@ export default class GridPanel {
         return `<div
                 style="${rowStyleGrid} ${msRowrStyleGrid} ${cellStyle}"
                 role="gridcell"
+                data-col-index="${gridColumn-1}"
+                data-row-index="${gridRow-2}"
                 title="${this.stripSlashes(value)}"
                 >${value}</div>`;
     }
 
+    rowSetSelect(rowIndex) {
+        const rowData = this.getStore(rowIndex);
+
+        this.setCellClassByAttribute('toggle', 'data-row-index', rowIndex, this.stylePrefix + '-cell-select');
+
+        console.log('rowSelect', rowIndex, rowData);
+    }
+
+    onGridHeaderCellClick(el) {
+        const colIndex = el.getAttribute('data-col-index');
+        this.setCellClassByAttribute('toggle', 'data-col-index', colIndex, this.stylePrefix + '-cell-select');
+
+        console.log('onGridHeaderCellClick');
+    }
+
     onGridCellClick(el) {
+        //this.setCellClass('toggle', el, this.stylePrefix + '-cell-select');
+        this.selectableRows && this.rowSetSelect(el.getAttribute('data-row-index'));
         console.log('onGridCellClick:', el);
     }
 
     onGridCellMouseOver(el) {
+        const rowIndex = el.getAttribute('data-row-index');
+        //this.setCellClass('add', el, this.stylePrefix + '-cell-mouseover');
+        this.selectableRows && this.setCellClassByAttribute('add', 'data-row-index', rowIndex, this.stylePrefix + '-cell-mouseover');
         console.log('onGridCellMouseOver:', el);
     }
 
     onGridCellMouseOut(el) {
+        const rowIndex = el.getAttribute('data-row-index');
+        //this.setCellClass('remove', el, this.stylePrefix + '-cell-mouseover');
+        this.selectableRows && this.setCellClassByAttribute('remove', 'data-row-index', rowIndex, this.stylePrefix + '-cell-mouseover');
         console.log('onGridCellMouseOut:', el);
+    }
+
+    /*
+     *  eventName: действие с классом(add, remove, toggle)
+     *  cell: выбранный DOM-элемент
+     */
+    setCellClass(eventName, cell, className) {
+        cell && cell.classList[eventName](className);
+    }
+
+    setCellClassByAttribute(eventName, attrName, attrVal, className) {
+        const cells = document.querySelectorAll(`[${attrName}="${attrVal}"]`);
+        cells && cells.forEach(cell => {
+            this.setCellClass(eventName, cell, className);
+        });
+    }
+
+    addCellEventListener(role, eventName, fn) {
+        document.getElementById(this.id).addEventListener(eventName, event => {
+            event.path.some(el => {
+                if(el.getAttribute('role') === role) {
+                    fn && fn(el);
+                    //console.log('addCellEventListener:', event);
+                    return true;
+                } else if(el.id === this.id) {
+                    return true;
+                }
+            });
+        });
     }
 
     render() {
@@ -183,16 +242,19 @@ export default class GridPanel {
 
         target.innerHTML = gridContainer;
 
-        document.getElementById(this.id).addEventListener('click', event => {
-            event.path.some(el => {
-                if(el.getAttribute('role') === 'gridcell') {
-                    //this.onGridCellClick(el);
-                    console.log('gridcell:', event);
-                    return true;
-                } else if(el.id === this.id) {
-                    return true;
-                }
-            });
+        this.addCellEventListener('headercell', 'click', el => {
+            this.onGridHeaderCellClick(el);
+            console.log('headercell');
+        });
+
+        this.addCellEventListener('gridcell', 'click', el => {
+            this.onGridCellClick(el);
+        });
+        this.addCellEventListener('gridcell', 'mouseover', el => {
+            this.onGridCellMouseOver(el);
+        });
+        this.addCellEventListener('gridcell', 'mouseout', el => {
+            this.onGridCellMouseOut(el);
         });
     }
 }

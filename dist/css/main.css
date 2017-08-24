@@ -8,3 +8,11 @@
 .main-container h1 {
     text-align: center;
 }
+
+.myGrid-cell-mouseover {
+    background-color: #F1F1F1;
+}
+
+.myGrid-cell-select {
+    background-color: #d4d2d2;
+}
