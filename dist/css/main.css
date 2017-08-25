@@ -9,6 +9,22 @@
     text-align: center;
 }
 
+.myGrid-cell-header {
+    padding: 10px;
+    border-bottom: 1px solid #999999; 
+    overflow: hidden; 
+    text-overflow: ellipsis; 
+    font-weight: 600; 
+    white-space: nowrap;
+}
+
+.myGrid-cell {
+    padding: 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .myGrid-cell-mouseover {
     background-color: #F1F1F1;
 }

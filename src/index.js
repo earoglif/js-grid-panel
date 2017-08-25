@@ -3,6 +3,16 @@ import GridPanel from './components/GridPanel';
 const gridPanel = new GridPanel({
     id: 'myGrid',
     targetId: 'content',
+    multiselect: false,
+    selectableCells: false,
+    selectableRows: false,
+    // selectableCols: false,
+    onRowSelect: (rowData, rowIndex) => {
+        console.log('onRowSelect:', rowData, rowIndex);
+    },
+    onCellSelect: (value, el, colIndex, rowIndex) => {
+        console.log('onCellSelect:', value, el, colIndex, rowIndex);
+    },
     columns: [
         {
             id: 'name',
