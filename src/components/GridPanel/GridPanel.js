@@ -18,7 +18,8 @@ export default class GridPanel {
         this.selectableCells = (props.selectableCells !== undefined) ? props.selectableCells : true; // Разрешить/запретить выделять ячейки
         this.selectableRows = (props.selectableRows !== undefined) ? props.selectableRows : true; // Разрешить/запретить выделять строки
         this.selectableCols = (props.selectableCols !== undefined) ? props.selectableCols : true; // Разрешить/запретить выделять колонки
-        this.onCellClick = props.onCellSelect || this.emptyFn; // Функция, срабатывающая при клике на ячейке
+        this.onHeaderClick = props.onHeaderClick || this.emptyFn; // Функция, срабатывающая при клике на заголовок
+        this.onCellClick = props.onCellClick || this.emptyFn; // Функция, срабатывающая при клике на ячейке
         this.onCellSelect = props.onCellSelect || this.emptyFn; // Функция, срабатывающая при выделении ячейки
         this.onRowSelect = props.onRowSelect || this.emptyFn; // Функция, срабатывающая при выделении строки
         this.onColSelect = props.onColSelect || this.emptyFn; // Функция, срабатывающая при выделении колонки
@@ -221,7 +222,8 @@ export default class GridPanel {
 
         if(classEvent === 'add') {
             const dataIndex = this.columns[colIndex].dataIndex,
-                  value = this.store[rowIndex][dataIndex];
+                  store = this.getStore(),
+                  value = store[rowIndex][dataIndex];
 
             (this.selectedCells.length && !this.multiselect) && this.deselectAllCells();
             this.selectedCells.push({
@@ -242,12 +244,12 @@ export default class GridPanel {
     //TODO: Разобрать реакцию на выделение колонок
     deselectAllCols() {
         this.selectedCols.length && this.selectedCols.forEach(item => {
-            this.cellSetSelect(item.colIndex, 'remove');
+            this.colSetSelect(item.colIndex, 'remove');
         });
     }
-    colSetCelect(colIndex, classEvent = 'add') {
+    colSetSelect(colIndex, classEvent = 'add') {
         this.selectedCols.length && this.selectedCols.some((item, i, array) => {
-            if(item.rowIndex === rowIndex) {
+            if(item.colIndex === colIndex) {
                 array.splice(i, 1);
                 classEvent = 'remove';
                 return true;
@@ -255,28 +257,36 @@ export default class GridPanel {
         });
 
         if(classEvent === 'add') {
-            const rowData = this.getStore(rowIndex);
-            (this.selectedRows.length && !this.multiselect) && this.deselectAllRows();
-            this.selectedRows.push({
-                rowIndex,
-                data: rowData
+            const colInfo = this.columns[colIndex],
+                  colData = [],
+                  store = this.getStore();
+            store.forEach((item) => {
+                colData.push(item[colInfo.dataIndex]);
             });
-            this.onRowSelect(rowData, rowIndex);
+            (this.selectedCols.length && !this.multiselect) && this.deselectAllCols();
+            this.selectedCols.push({
+                colIndex,
+                dataIndex: colInfo.dataIndex,
+                data: colData
+            });
+            this.onColSelect(colData, colIndex, colInfo.dataIndex);
+            console.log('colSetSelect:', colInfo, this.selectedCols);
         }
 
         this.setCellClassByAttribute(classEvent, 'data-col-index', colIndex, this.stylePrefix + '-cell-select');
     }
 
     onGridHeaderCellClick(el) {
-        const colIndex = el.getAttribute('data-header-col-index');
-        this.setCellClassByAttribute('toggle', 'data-col-index', colIndex, this.stylePrefix + '-cell-select');
+        const colIndex = el.getAttribute('data-header-col-index'),
+              colProps = this.columns[colIndex];
 
-        console.log('onGridHeaderCellClick');
+        this.onHeaderClick(colProps, el);
     }
 
     onGridCellClick(el) {
-        this.selectableRows && this.rowSetSelect(el.getAttribute('data-row-index'));
         this.selectableCells && this.cellSetSelect(el, el.getAttribute('data-col-index'), el.getAttribute('data-row-index'));
+        this.selectableRows && this.rowSetSelect(el.getAttribute('data-row-index'));
+        this.selectableCols && this.colSetSelect(el.getAttribute('data-col-index'));
         //console.log('onGridCellClick:', el, this.selectableRows);
     }
 

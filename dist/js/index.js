@@ -3687,12 +3687,18 @@ var gridPanel = new _GridPanel2.default({
     multiselect: false,
     selectableCells: false,
     selectableRows: false,
-    // selectableCols: false,
+    selectableCols: false,
+    onHeaderClick: function onHeaderClick(colProps, el) {
+        console.log('onHeaderClick:', colProps, el);
+    },
     onRowSelect: function onRowSelect(rowData, rowIndex) {
         console.log('onRowSelect:', rowData, rowIndex);
     },
     onCellSelect: function onCellSelect(value, el, colIndex, rowIndex) {
         console.log('onCellSelect:', value, el, colIndex, rowIndex);
+    },
+    onColSelect: function onColSelect(colData, colIndex, dataIndex) {
+        console.log('onColSelect:', colData, colIndex, dataIndex);
     },
     columns: [{
         id: 'name',
@@ -3810,7 +3816,8 @@ var GridPanel = function () {
         this.selectableCells = props.selectableCells !== undefined ? props.selectableCells : true; // Разрешить/запретить выделять ячейки
         this.selectableRows = props.selectableRows !== undefined ? props.selectableRows : true; // Разрешить/запретить выделять строки
         this.selectableCols = props.selectableCols !== undefined ? props.selectableCols : true; // Разрешить/запретить выделять колонки
-        this.onCellClick = props.onCellSelect || this.emptyFn; // Функция, срабатывающая при клике на ячейке
+        this.onHeaderClick = props.onHeaderClick || this.emptyFn; // Функция, срабатывающая при клике на заголовок
+        this.onCellClick = props.onCellClick || this.emptyFn; // Функция, срабатывающая при клике на ячейке
         this.onCellSelect = props.onCellSelect || this.emptyFn; // Функция, срабатывающая при выделении ячейки
         this.onRowSelect = props.onRowSelect || this.emptyFn; // Функция, срабатывающая при выделении строки
         this.onColSelect = props.onColSelect || this.emptyFn; // Функция, срабатывающая при выделении колонки
@@ -4030,7 +4037,8 @@ var GridPanel = function () {
 
             if (classEvent === 'add') {
                 var dataIndex = this.columns[colIndex].dataIndex,
-                    value = this.store[rowIndex][dataIndex];
+                    store = this.getStore(),
+                    value = store[rowIndex][dataIndex];
 
                 this.selectedCells.length && !this.multiselect && this.deselectAllCells();
                 this.selectedCells.push({
@@ -4056,16 +4064,16 @@ var GridPanel = function () {
             var _this5 = this;
 
             this.selectedCols.length && this.selectedCols.forEach(function (item) {
-                _this5.cellSetSelect(item.colIndex, 'remove');
+                _this5.colSetSelect(item.colIndex, 'remove');
             });
         }
     }, {
-        key: 'colSetCelect',
-        value: function colSetCelect(colIndex) {
+        key: 'colSetSelect',
+        value: function colSetSelect(colIndex) {
             var classEvent = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'add';
 
             this.selectedCols.length && this.selectedCols.some(function (item, i, array) {
-                if (item.rowIndex === rowIndex) {
+                if (item.colIndex === colIndex) {
                     array.splice(i, 1);
                     classEvent = 'remove';
                     return true;
@@ -4073,13 +4081,20 @@ var GridPanel = function () {
             });
 
             if (classEvent === 'add') {
-                var rowData = this.getStore(rowIndex);
-                this.selectedRows.length && !this.multiselect && this.deselectAllRows();
-                this.selectedRows.push({
-                    rowIndex: rowIndex,
-                    data: rowData
+                var colInfo = this.columns[colIndex],
+                    colData = [],
+                    store = this.getStore();
+                store.forEach(function (item) {
+                    colData.push(item[colInfo.dataIndex]);
                 });
-                this.onRowSelect(rowData, rowIndex);
+                this.selectedCols.length && !this.multiselect && this.deselectAllCols();
+                this.selectedCols.push({
+                    colIndex: colIndex,
+                    dataIndex: colInfo.dataIndex,
+                    data: colData
+                });
+                this.onColSelect(colData, colIndex, colInfo.dataIndex);
+                console.log('colSetSelect:', colInfo, this.selectedCols);
             }
 
             this.setCellClassByAttribute(classEvent, 'data-col-index', colIndex, this.stylePrefix + '-cell-select');
@@ -4087,16 +4102,17 @@ var GridPanel = function () {
     }, {
         key: 'onGridHeaderCellClick',
         value: function onGridHeaderCellClick(el) {
-            var colIndex = el.getAttribute('data-header-col-index');
-            this.setCellClassByAttribute('toggle', 'data-col-index', colIndex, this.stylePrefix + '-cell-select');
+            var colIndex = el.getAttribute('data-header-col-index'),
+                colProps = this.columns[colIndex];
 
-            console.log('onGridHeaderCellClick');
+            this.onHeaderClick(colProps, el);
         }
     }, {
         key: 'onGridCellClick',
         value: function onGridCellClick(el) {
-            this.selectableRows && this.rowSetSelect(el.getAttribute('data-row-index'));
             this.selectableCells && this.cellSetSelect(el, el.getAttribute('data-col-index'), el.getAttribute('data-row-index'));
+            this.selectableRows && this.rowSetSelect(el.getAttribute('data-row-index'));
+            this.selectableCols && this.colSetSelect(el.getAttribute('data-col-index'));
             //console.log('onGridCellClick:', el, this.selectableRows);
         }
     }, {

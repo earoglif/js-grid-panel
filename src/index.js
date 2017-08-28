@@ -6,12 +6,18 @@ const gridPanel = new GridPanel({
     multiselect: false,
     selectableCells: false,
     selectableRows: false,
-    // selectableCols: false,
+    selectableCols: false,
+    onHeaderClick: (colProps, el) => {
+        console.log('onHeaderClick:', colProps, el);
+    },
     onRowSelect: (rowData, rowIndex) => {
         console.log('onRowSelect:', rowData, rowIndex);
     },
     onCellSelect: (value, el, colIndex, rowIndex) => {
         console.log('onCellSelect:', value, el, colIndex, rowIndex);
+    },
+    onColSelect: (colData, colIndex, dataIndex) => {
+        console.log('onColSelect:', colData, colIndex, dataIndex);
     },
     columns: [
         {
