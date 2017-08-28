@@ -3689,7 +3689,12 @@ var gridPanel = new _GridPanel2.default({
     selectableRows: false,
     selectableCols: false,
     onHeaderClick: function onHeaderClick(colProps, el) {
-        console.log('onHeaderClick:', colProps, el);
+        var sortInfo = this.getSortInfo(),
+            direction = this.getSortInfo().direction === 'ASC' ? 'DESC' : 'ASC';
+
+        this.sort(colProps.dataIndex, direction);
+
+        console.log('onHeaderClick:', colProps.dataIndex, sortInfo);
     },
     onRowSelect: function onRowSelect(rowData, rowIndex) {
         console.log('onRowSelect:', rowData, rowIndex);
@@ -3732,13 +3737,11 @@ var gridPanel = new _GridPanel2.default({
 
 document.addEventListener("DOMContentLoaded", function () {
 
-    console.log('INIT:', undefined, gridPanel);
-
     gridPanel.loadData({
         url: 'http://localhost:3000/db'
     }).then(function (props) {
-        gridPanel.render();
         gridPanel.setExtraData(props);
+        gridPanel.render();
         gridPanel.addRows(props.modules);
     }).catch(function (error) {
         gridPanel.showError(error);
@@ -3807,6 +3810,7 @@ var GridPanel = function () {
         this.targetId = props.targetId; // Идентификатор элемента в котором будет отрисована
         this.columns = savedParams.columns ? savedParams.columns : props.columns; // Параметры колонок
         this.stylePrefix = props.stylePrefix || props.id; // Префикс для CSS-классов
+        this.sortInfo = {}; // Наименование колонки и направление сортировки
         this.extraData = null; // Дополнительные данные вне store
         this.store = []; // Основные данные
         this.selectedCells = []; // Выделенные ячейки
@@ -3821,8 +3825,6 @@ var GridPanel = function () {
         this.onCellSelect = props.onCellSelect || this.emptyFn; // Функция, срабатывающая при выделении ячейки
         this.onRowSelect = props.onRowSelect || this.emptyFn; // Функция, срабатывающая при выделении строки
         this.onColSelect = props.onColSelect || this.emptyFn; // Функция, срабатывающая при выделении колонки
-
-        console.log('GridPanel:', savedParams, props, this.selectableRows, this.columns);
     }
 
     _createClass(GridPanel, [{
@@ -3847,6 +3849,16 @@ var GridPanel = function () {
             return functionToCheck && getType.toString.call(functionToCheck) === '[object Function]';
         }
     }, {
+        key: 'getSortInfo',
+        value: function getSortInfo() {
+            return this.sortInfo;
+        }
+    }, {
+        key: 'setSortInfo',
+        value: function setSortInfo(props) {
+            this.sortInfo = props;
+        }
+    }, {
         key: 'getStore',
         value: function getStore(index) {
             var store = index !== undefined ? this.store[index] : this.store;
@@ -3854,13 +3866,44 @@ var GridPanel = function () {
         }
     }, {
         key: 'setStore',
-        value: function setStore(data) {
+        value: function setStore() {
+            var data = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
+
             this.store = data;
         }
     }, {
         key: 'addToStore',
         value: function addToStore(data) {
             this.setStore(this.store.concat(data));
+        }
+
+        /*
+         *  sorter: {Strung} наименование сортируемой колонки
+         *  direction: {Strung} направление сортировки ('ASC', 'DESC')
+         *  localSort: {Boolean} сортировать локально, или на сервере
+         */
+
+    }, {
+        key: 'sort',
+        value: function sort(sorter, direction) {
+            var localSort = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : true;
+
+            if (localSort) {
+                var data = this.getStore();
+                data.sort(function (a, b) {
+                    if (direction === 'DESC') {
+                        return a[sorter] < b[sorter] ? 1 : -1;
+                    } else {
+                        return a[sorter] > b[sorter] ? 1 : -1;
+                    }
+                });
+
+                this.setStore();
+                this.render();
+                this.addRows(data);
+            }
+
+            this.setSortInfo({ sorter: sorter, direction: direction });
         }
     }, {
         key: 'setExtraData',
@@ -3904,8 +3947,6 @@ var GridPanel = function () {
             var gridPanelStyle = 'display: grid; grid-template-columns: ' + gridTemplateColumns + '; grid-template-rows: auto;',
                 msGridPanelStyle = 'display: -ms-grid; -ms-grid-columns: ' + gridTemplateColumns + '; -ms-grid-rows: auto;',
                 mainEl = '<div id="' + this.id + '" style="' + gridPanelStyle + ' ' + msGridPanelStyle + '">' + header + '</div>';
-
-            console.log('setGridContainer:', mainEl);
 
             return mainEl;
         }
@@ -4052,8 +4093,6 @@ var GridPanel = function () {
             }
 
             this.setCellClass(classEvent, el, this.stylePrefix + '-cell-select');
-
-            console.log('cellSetSelect:', this.selectedCells);
         }
 
         //TODO: Разобрать реакцию на выделение колонок
@@ -4094,7 +4133,6 @@ var GridPanel = function () {
                     data: colData
                 });
                 this.onColSelect(colData, colIndex, colInfo.dataIndex);
-                console.log('colSetSelect:', colInfo, this.selectedCols);
             }
 
             this.setCellClassByAttribute(classEvent, 'data-col-index', colIndex, this.stylePrefix + '-cell-select');
@@ -4113,7 +4151,6 @@ var GridPanel = function () {
             this.selectableCells && this.cellSetSelect(el, el.getAttribute('data-col-index'), el.getAttribute('data-row-index'));
             this.selectableRows && this.rowSetSelect(el.getAttribute('data-row-index'));
             this.selectableCols && this.colSetSelect(el.getAttribute('data-col-index'));
-            //console.log('onGridCellClick:', el, this.selectableRows);
         }
     }, {
         key: 'onGridCellMouseOver',
@@ -4123,7 +4160,6 @@ var GridPanel = function () {
             this.selectableCells && this.setCellClass('add', el, this.stylePrefix + '-cell-mouseover');
             this.selectableRows && this.setCellClassByAttribute('add', 'data-row-index', rowIndex, this.stylePrefix + '-cell-mouseover');
             this.selectableCols && this.setCellClassByAttribute('add', 'data-col-index', colIndex, this.stylePrefix + '-cell-mouseover');
-            // console.log('onGridCellMouseOver:', el);
         }
     }, {
         key: 'onGridCellMouseOut',
@@ -4133,7 +4169,6 @@ var GridPanel = function () {
             this.selectableCells && this.setCellClass('remove', el, this.stylePrefix + '-cell-mouseover');
             this.selectableRows && this.setCellClassByAttribute('remove', 'data-row-index', rowIndex, this.stylePrefix + '-cell-mouseover');
             this.selectableCols && this.setCellClassByAttribute('remove', 'data-col-index', colIndex, this.stylePrefix + '-cell-mouseover');
-            // console.log('onGridCellMouseOut:', el);
         }
 
         /*
@@ -4166,7 +4201,6 @@ var GridPanel = function () {
                 event.path.some(function (el) {
                     if (el.getAttribute('role') === role) {
                         fn && fn(el);
-                        //console.log('addCellEventListener:', event);
                         return true;
                     } else if (el.id === _this7.id) {
                         return true;

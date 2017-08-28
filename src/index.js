@@ -7,8 +7,13 @@ const gridPanel = new GridPanel({
     selectableCells: false,
     selectableRows: false,
     selectableCols: false,
-    onHeaderClick: (colProps, el) => {
-        console.log('onHeaderClick:', colProps, el);
+    onHeaderClick: function(colProps, el) {
+        const sortInfo = this.getSortInfo(),
+              direction = (this.getSortInfo().direction === 'ASC') ? 'DESC' : 'ASC';
+
+        this.sort(colProps.dataIndex, direction);
+
+        console.log('onHeaderClick:', colProps.dataIndex, sortInfo);
     },
     onRowSelect: (rowData, rowIndex) => {
         console.log('onRowSelect:', rowData, rowIndex);
@@ -55,13 +60,11 @@ const gridPanel = new GridPanel({
 
 document.addEventListener("DOMContentLoaded", () => {
 
-    console.log('INIT:', this, gridPanel);
-
     gridPanel.loadData({
         url: 'http://localhost:3000/db'
     }).then( props => {
-        gridPanel.render();
         gridPanel.setExtraData(props);
+        gridPanel.render();
         gridPanel.addRows(props.modules);
     }).catch( error => {
         gridPanel.showError(error);

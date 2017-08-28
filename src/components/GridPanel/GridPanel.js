@@ -9,6 +9,7 @@ export default class GridPanel {
         this.targetId = props.targetId; // Идентификатор элемента в котором будет отрисована
         this.columns = savedParams.columns ? savedParams.columns : props.columns; // Параметры колонок
         this.stylePrefix = props.stylePrefix || props.id; // Префикс для CSS-классов
+        this.sortInfo = {}; // Наименование колонки и направление сортировки
         this.extraData = null; // Дополнительные данные вне store
         this.store = []; // Основные данные
         this.selectedCells = []; // Выделенные ячейки
@@ -23,8 +24,6 @@ export default class GridPanel {
         this.onCellSelect = props.onCellSelect || this.emptyFn; // Функция, срабатывающая при выделении ячейки
         this.onRowSelect = props.onRowSelect || this.emptyFn; // Функция, срабатывающая при выделении строки
         this.onColSelect = props.onColSelect || this.emptyFn; // Функция, срабатывающая при выделении колонки
-
-        console.log('GridPanel:', savedParams, props, this.selectableRows, this.columns);
     }
 
     showError(msg) {
@@ -44,17 +43,49 @@ export default class GridPanel {
         return functionToCheck && getType.toString.call(functionToCheck) === '[object Function]';
     }
 
+    getSortInfo() {
+        return this.sortInfo;
+    }
+
+    setSortInfo(props) {
+        this.sortInfo = props;
+    }
+
     getStore(index) {
         const store = (index !== undefined) ? this.store[index] : this.store;
         return store;
     }
 
-    setStore(data) {
+    setStore(data=[]) {
         this.store = data;
     }
 
     addToStore(data) {
         this.setStore(this.store.concat(data));
+    }
+
+    /*
+     *  sorter: {Strung} наименование сортируемой колонки
+     *  direction: {Strung} направление сортировки ('ASC', 'DESC')
+     *  localSort: {Boolean} сортировать локально, или на сервере
+     */
+    sort(sorter, direction, localSort=true) {
+        if(localSort) {
+            let data = this.getStore();
+            data.sort((a, b) => {
+                if(direction === 'DESC') {
+                    return (a[sorter] < b[sorter]) ? 1 : -1
+                }else{
+                    return (a[sorter] > b[sorter]) ? 1 : -1
+                }
+            });
+
+            this.setStore();
+            this.render();
+            this.addRows(data);
+        }
+
+        this.setSortInfo({sorter, direction});
     }
 
     setExtraData(extraData) {
@@ -98,8 +129,6 @@ export default class GridPanel {
         const gridPanelStyle = `display: grid; grid-template-columns: ${gridTemplateColumns}; grid-template-rows: auto;`,
               msGridPanelStyle = `display: -ms-grid; -ms-grid-columns: ${gridTemplateColumns}; -ms-grid-rows: auto;`,
               mainEl = `<div id="${this.id}" style="${gridPanelStyle} ${msGridPanelStyle}">${header}</div>`;
-
-        console.log('setGridContainer:', mainEl);
 
         return mainEl;
     }
@@ -237,8 +266,6 @@ export default class GridPanel {
         }
 
         this.setCellClass(classEvent, el, this.stylePrefix + '-cell-select');
-
-        console.log('cellSetSelect:', this.selectedCells);
     }
 
     //TODO: Разобрать реакцию на выделение колонок
@@ -270,7 +297,6 @@ export default class GridPanel {
                 data: colData
             });
             this.onColSelect(colData, colIndex, colInfo.dataIndex);
-            console.log('colSetSelect:', colInfo, this.selectedCols);
         }
 
         this.setCellClassByAttribute(classEvent, 'data-col-index', colIndex, this.stylePrefix + '-cell-select');
@@ -287,7 +313,6 @@ export default class GridPanel {
         this.selectableCells && this.cellSetSelect(el, el.getAttribute('data-col-index'), el.getAttribute('data-row-index'));
         this.selectableRows && this.rowSetSelect(el.getAttribute('data-row-index'));
         this.selectableCols && this.colSetSelect(el.getAttribute('data-col-index'));
-        //console.log('onGridCellClick:', el, this.selectableRows);
     }
 
     onGridCellMouseOver(el) {
@@ -296,7 +321,6 @@ export default class GridPanel {
         this.selectableCells && this.setCellClass('add', el, this.stylePrefix + '-cell-mouseover');
         this.selectableRows && this.setCellClassByAttribute('add', 'data-row-index', rowIndex, this.stylePrefix + '-cell-mouseover');
         this.selectableCols && this.setCellClassByAttribute('add', 'data-col-index', colIndex, this.stylePrefix + '-cell-mouseover');
-        // console.log('onGridCellMouseOver:', el);
     }
 
     onGridCellMouseOut(el) {
@@ -305,7 +329,6 @@ export default class GridPanel {
         this.selectableCells && this.setCellClass('remove', el, this.stylePrefix + '-cell-mouseover');
         this.selectableRows && this.setCellClassByAttribute('remove', 'data-row-index', rowIndex, this.stylePrefix + '-cell-mouseover');
         this.selectableCols && this.setCellClassByAttribute('remove', 'data-col-index', colIndex, this.stylePrefix + '-cell-mouseover');
-        // console.log('onGridCellMouseOut:', el);
     }
 
     /*
@@ -329,7 +352,6 @@ export default class GridPanel {
             event.path.some(el => {
                 if(el.getAttribute('role') === role) {
                     fn && fn(el);
-                    //console.log('addCellEventListener:', event);
                     return true;
                 } else if(el.id === this.id) {
                     return true;
