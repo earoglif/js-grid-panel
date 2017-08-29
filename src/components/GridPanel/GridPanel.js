@@ -8,6 +8,7 @@ export default class GridPanel {
         this.id = props.id; // Идентификатор таблицы
         this.targetId = props.targetId; // Идентификатор элемента в котором будет отрисована
         this.columns = savedParams.columns ? savedParams.columns : props.columns; // Параметры колонок
+        this.displayHeader = (props.displayHeader !== undefined) ? props.displayHeader : true; // Отображать или нет заголовки
         this.stylePrefix = props.stylePrefix || props.id; // Префикс для CSS-классов
         this.sortInfo = {}; // Наименование колонки и направление сортировки
         this.extraData = null; // Дополнительные данные вне store
@@ -69,7 +70,7 @@ export default class GridPanel {
      *  direction: {Strung} направление сортировки ('ASC', 'DESC')
      *  localSort: {Boolean} сортировать локально, или на сервере
      */
-    sort(sorter, direction, localSort=true) {
+    sortByColDataIndex(sorter, direction, localSort=true) {
         if(localSort) {
             let data = this.getStore();
             data.sort((a, b) => {
@@ -106,7 +107,7 @@ export default class GridPanel {
             gridColIndex = 1,
             columnWidth, headerStyleGrid, msHeaderStyleGrid;
 
-        columns.forEach((item, i) => {
+        this.displayHeader && columns.forEach((item, i) => {
             if(item['visible']) {
                 columnWidth = item.width || 'auto';
                 gridTemplateColumns.push(columnWidth);
@@ -158,12 +159,13 @@ export default class GridPanel {
 
     addRows(newRows) {
         const gridPanel = document.getElementById(this.id),
-              columns = this.columns || [];
+              columns = this.columns || [],
+              headrtRowsLenth = this.displayHeader ? 2 : 1;
 
         let newGridTemplateRows = [],
             appendInnerHtml = '',
             gridColIndex = 1,
-            gridRowIndex = this.getStore().length + 2;
+            gridRowIndex = this.getStore().length + headrtRowsLenth;
 
         this.addToStore(newRows);
 
@@ -189,21 +191,22 @@ export default class GridPanel {
 
     renderRow(itemCol, itemRow, gridColumn, gridRow) {
         let cellStyle = itemRow.style || '',
-        rowStyleGrid, msRowrStyleGrid;
+            headrtRowsLenth = this.displayHeader ? 2 : 1,
+            rowStyleGrid, msRowrStyleGrid;
 
         let value = (itemCol.render && this.isFunction(itemCol.render)) ?
                         itemCol.render(itemRow[itemCol.dataIndex], itemRow, this.extraData) :
                         itemRow[itemCol.dataIndex];
 
-        rowStyleGrid = `grid-column: ${gridColumn + '/' + (gridColumn+1)}; grid-row: ${gridRow + '/' + (gridRow+1)};`;
+        rowStyleGrid = `grid-column: ${gridColumn + '/' + (gridColumn + 1)}; grid-row: ${gridRow + '/' + (gridRow + 1)};`;
         msRowrStyleGrid = `-ms-grid-column: ${gridColumn}; -ms-grid-row: ${gridRow};`;
 
         return `<div
                 class="${this.stylePrefix}-cell"
                 style="${rowStyleGrid} ${msRowrStyleGrid} ${cellStyle}"
                 role="gridcell"
-                data-col-index="${gridColumn-1}"
-                data-row-index="${gridRow-2}"
+                data-col-index="${gridColumn - 1}"
+                data-row-index="${gridRow - headrtRowsLenth}"
                 title="${this.stripSlashes(value)}"
                 >${value}</div>`;
     }

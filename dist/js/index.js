@@ -3684,15 +3684,16 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 var gridPanel = new _GridPanel2.default({
     id: 'myGrid',
     targetId: 'content',
+    displayHeader: false,
     multiselect: false,
-    selectableCells: false,
+    //selectableCells: false,
     selectableRows: false,
     selectableCols: false,
     onHeaderClick: function onHeaderClick(colProps, el) {
         var sortInfo = this.getSortInfo(),
             direction = this.getSortInfo().direction === 'ASC' ? 'DESC' : 'ASC';
 
-        this.sort(colProps.dataIndex, direction);
+        this.sortByColDataIndex(colProps.dataIndex, direction);
 
         console.log('onHeaderClick:', colProps.dataIndex, sortInfo);
     },
@@ -3809,6 +3810,7 @@ var GridPanel = function () {
         this.id = props.id; // Идентификатор таблицы
         this.targetId = props.targetId; // Идентификатор элемента в котором будет отрисована
         this.columns = savedParams.columns ? savedParams.columns : props.columns; // Параметры колонок
+        this.displayHeader = props.displayHeader !== undefined ? props.displayHeader : true; // Отображать или нет заголовки
         this.stylePrefix = props.stylePrefix || props.id; // Префикс для CSS-классов
         this.sortInfo = {}; // Наименование колонки и направление сортировки
         this.extraData = null; // Дополнительные данные вне store
@@ -3884,8 +3886,8 @@ var GridPanel = function () {
          */
 
     }, {
-        key: 'sort',
-        value: function sort(sorter, direction) {
+        key: 'sortByColDataIndex',
+        value: function sortByColDataIndex(sorter, direction) {
             var localSort = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : true;
 
             if (localSort) {
@@ -3930,7 +3932,7 @@ var GridPanel = function () {
                 headerStyleGrid = void 0,
                 msHeaderStyleGrid = void 0;
 
-            columns.forEach(function (item, i) {
+            this.displayHeader && columns.forEach(function (item, i) {
                 if (item['visible']) {
                     columnWidth = item.width || 'auto';
                     gridTemplateColumns.push(columnWidth);
@@ -3979,12 +3981,13 @@ var GridPanel = function () {
             var _this2 = this;
 
             var gridPanel = document.getElementById(this.id),
-                columns = this.columns || [];
+                columns = this.columns || [],
+                headrtRowsLenth = this.displayHeader ? 2 : 1;
 
             var newGridTemplateRows = [],
                 appendInnerHtml = '',
                 gridColIndex = 1,
-                gridRowIndex = this.getStore().length + 2;
+                gridRowIndex = this.getStore().length + headrtRowsLenth;
 
             this.addToStore(newRows);
 
@@ -4010,6 +4013,7 @@ var GridPanel = function () {
         key: 'renderRow',
         value: function renderRow(itemCol, itemRow, gridColumn, gridRow) {
             var cellStyle = itemRow.style || '',
+                headrtRowsLenth = this.displayHeader ? 2 : 1,
                 rowStyleGrid = void 0,
                 msRowrStyleGrid = void 0;
 
@@ -4018,7 +4022,7 @@ var GridPanel = function () {
             rowStyleGrid = 'grid-column: ' + (gridColumn + '/' + (gridColumn + 1)) + '; grid-row: ' + (gridRow + '/' + (gridRow + 1)) + ';';
             msRowrStyleGrid = '-ms-grid-column: ' + gridColumn + '; -ms-grid-row: ' + gridRow + ';';
 
-            return '<div\n                class="' + this.stylePrefix + '-cell"\n                style="' + rowStyleGrid + ' ' + msRowrStyleGrid + ' ' + cellStyle + '"\n                role="gridcell"\n                data-col-index="' + (gridColumn - 1) + '"\n                data-row-index="' + (gridRow - 2) + '"\n                title="' + this.stripSlashes(value) + '"\n                >' + value + '</div>';
+            return '<div\n                class="' + this.stylePrefix + '-cell"\n                style="' + rowStyleGrid + ' ' + msRowrStyleGrid + ' ' + cellStyle + '"\n                role="gridcell"\n                data-col-index="' + (gridColumn - 1) + '"\n                data-row-index="' + (gridRow - headrtRowsLenth) + '"\n                title="' + this.stripSlashes(value) + '"\n                >' + value + '</div>';
         }
     }, {
         key: 'deselectAllRows',

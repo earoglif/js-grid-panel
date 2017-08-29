@@ -3,15 +3,16 @@ import GridPanel from './components/GridPanel';
 const gridPanel = new GridPanel({
     id: 'myGrid',
     targetId: 'content',
+    displayHeader: false,
     multiselect: false,
-    selectableCells: false,
+    //selectableCells: false,
     selectableRows: false,
     selectableCols: false,
     onHeaderClick: function(colProps, el) {
         const sortInfo = this.getSortInfo(),
               direction = (this.getSortInfo().direction === 'ASC') ? 'DESC' : 'ASC';
 
-        this.sort(colProps.dataIndex, direction);
+        this.sortByColDataIndex(colProps.dataIndex, direction);
 
         console.log('onHeaderClick:', colProps.dataIndex, sortInfo);
     },
